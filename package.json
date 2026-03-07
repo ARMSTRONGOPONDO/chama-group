@@ -11,5 +11,9 @@
     "devDependencies": {
         "concurrently": "^8.2.2",
         "tsx": "^4.21.0"
+    },
+    "dependencies": {
+        "lightningcss": "^1.31.1",
+        "prisma": "^7.4.2"
     }
 }
