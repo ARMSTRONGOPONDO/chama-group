@@ -3,12 +3,7 @@
     "version": "1.0.0",
     "description": "Chama Management System",
     "private": true,
-    "workspaces": [
-        "frontend",
-        "backend"
-    ],
     "scripts": {
-        "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
         "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
         "install:all": "npm install --prefix backend && npm install --prefix frontend",
         "prisma:generate": "npm run prisma:generate --prefix backend"
