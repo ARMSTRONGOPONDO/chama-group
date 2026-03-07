@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  TREASURER
+  MEMBER
+}
+
+enum LoanStatus {
+  PENDING
+  ACTIVE
+  REPAID
+  DEFAULTED
+}
+
+model Member {
+  id            String    @id @default(uuid())
+  memberNumber  String    @unique
+  name          String
+  phone         String    @unique
+  nationalId    String    @unique
+  dateJoined    DateTime
+  role          Role      @default(MEMBER)
+  status        String    @default("ACTIVE")
+  password      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  savings       Saving[]
+  loans         Loan[]
+  recordedBy    Saving[]  @relation("Recorder")
+  actions       Repayment[] @relation("RepaymentRecorder")
+  auditLogs     AuditLog[]
+}
+
+model Saving {
+  id            String    @id @default(uuid())
+  memberId      String
+  member        Member    @relation(fields: [memberId], references: [id])
+  amount        Decimal   @db.Decimal(15, 2)
+  dateRecorded  DateTime
+  recordedById  String
+  recordedBy    Member    @relation("Recorder", fields: [recordedById], references: [id])
+  transactionId String?   @unique
+  createdAt     DateTime  @default(now())
+}
+
+model Loan {
+  id                  String      @id @default(uuid())
+  memberId            String
+  member              Member      @relation(fields: [memberId], references: [id])
+  principal           Decimal     @db.Decimal(15, 2)
+  interestRatePct     Decimal     @db.Decimal(5, 2)
+  termMonths          Int
+  installmentsCount   Int
+  disbursedAt         DateTime?
+  status              LoanStatus  @default(PENDING)
+  totalInterest       Decimal     @db.Decimal(15, 2)
+  totalPayable        Decimal     @db.Decimal(15, 2)
+  installmentAmount   Decimal     @db.Decimal(15, 2)
+  maxMultiplier       Int
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  
+  repayments          Repayment[]
+}
+
+model Repayment {
+  id               String    @id @default(uuid())
+  loanId           String
+  loan             Loan      @relation(fields: [loanId], references: [id])
+  memberId         String
+  amount           Decimal   @db.Decimal(15, 2)
+  paymentDate      DateTime
+  recordedById     String
+  recordedBy       Member    @relation("RepaymentRecorder", fields: [recordedById], references: [id])
+  remainingBalance Decimal   @db.Decimal(15, 2)
+  createdAt        DateTime  @default(now())
+}
+
+model AuditLog {
+  id           String    @id @default(uuid())
+  type         String
+  referenceId  String?
+  userId       String
+  user         Member    @relation(fields: [userId], references: [id])
+  amount       Decimal?  @db.Decimal(15, 2)
+  note         String?   @db.Text
+  createdAt    DateTime  @default(now())
+}
+
+model Setting {
+  id                  Int      @id @default(1)
+  loanMultiplier      Int      @default(3)
+  minMonthsSaved      Int      @default(3)
+  lateFeePct          Decimal  @default(5.00) @db.Decimal(5, 2)
+  interestPolicy      String   @default("SIMPLE")
+}
