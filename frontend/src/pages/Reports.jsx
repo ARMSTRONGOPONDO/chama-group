@@ -42,35 +42,16 @@ export default function Reports() {
           reportsApi.getMemberBreakdown(),
         ]);
         if (sumRes.status === 'fulfilled' && sumRes.value) setSummary(sumRes.value);
-        else setSummary({ totalSavings: 380000, totalLoans: 460000, loansRepaid: 200000, interestEarned: 52000 });
         if (growthRes.status === 'fulfilled' && Array.isArray(growthRes.value)) setSavingsGrowth(growthRes.value);
-        else setSavingsGrowth([
-          { month: 'Jan', total: 120000 },
-          { month: 'Feb', total: 180000 },
-          { month: 'Mar', total: 220000 },
-          { month: 'Apr', total: 250000 },
-          { month: 'May', total: 310000 },
-          { month: 'Jun', total: 380000 },
-        ]);
         if (loansRes.status === 'fulfilled' && Array.isArray(loansRes.value)) setLoansIssued(loansRes.value);
-        else setLoansIssued([
-          { month: 'Jan', amount: 50000 },
-          { month: 'Feb', amount: 80000 },
-          { month: 'Mar', amount: 60000 },
-          { month: 'Apr', amount: 90000 },
-          { month: 'May', amount: 70000 },
-          { month: 'Jun', amount: 110000 },
-        ]);
         if (breakdownRes.status === 'fulfilled' && Array.isArray(breakdownRes.value)) setMemberBreakdown(breakdownRes.value);
-        else setMemberBreakdown([
-          { name: 'Jane W.', value: 85000 },
-          { name: 'John K.', value: 72000 },
-          { name: 'Mary N.', value: 68000 },
-          { name: 'Peter O.', value: 55000 },
-          { name: 'Others', value: 100000 },
-        ]);
+
+        const firstError = [sumRes, growthRes, loansRes, breakdownRes].find(r => r.status === 'rejected');
+        if (firstError) {
+          setError(firstError.reason?.message || 'Failed to load some reports.');
+        }
       } catch (e) {
-        setError(e.message || 'Failed to load reports.');
+        // This part is left intentionally blank as Promise.allSettled handles individual errors.
       } finally {
         setLoading(false);
       }
@@ -87,28 +68,25 @@ export default function Reports() {
     );
   }
 
+  const statBlocks = [
+    { label: 'Total Savings', value: formatCurrency(summary?.totalSavings ?? summary?.totalGroupSavings ?? 0) },
+    { label: 'Loans Issued', value: formatCurrency(summary?.totalLoans ?? summary?.loansIssued ?? 0) },
+    { label: 'Loans Repaid', value: formatCurrency(summary?.loansRepaid ?? 0) },
+    { label: 'Interest Earned', value: formatCurrency(summary?.interestEarned ?? summary?.interest ?? 0) },
+  ];
+
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-      {error && <Alert type="info" onDismiss={() => setError(null)} dismissible>Using sample data. {error}</Alert>}
+      {error && <Alert type="error" onDismiss={() => setError(null)} dismissible>{error}</Alert>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <p className="text-sm text-gray-500">Total group savings</p>
-          <p className="text-xl font-bold text-gray-900">{formatCurrency(summary?.totalSavings ?? summary?.totalGroupSavings ?? 0)}</p>
-        </Card>
-        <Card>
-          <p className="text-sm text-gray-500">Loans issued</p>
-          <p className="text-xl font-bold text-gray-900">{formatCurrency(summary?.totalLoans ?? summary?.loansIssued ?? 0)}</p>
-        </Card>
-        <Card>
-          <p className="text-sm text-gray-500">Loans repaid</p>
-          <p className="text-xl font-bold text-gray-900">{formatCurrency(summary?.loansRepaid ?? 0)}</p>
-        </Card>
-        <Card>
-          <p className="text-sm text-gray-500">Interest earned</p>
-          <p className="text-xl font-bold text-gray-900">{formatCurrency(summary?.interestEarned ?? summary?.interest ?? 0)}</p>
-        </Card>
+        {statBlocks.map((block) => (
+          <Card key={block.label} className="text-center">
+            <p className="text-sm text-gray-500">{block.label}</p>
+            <p className="text-xl font-bold text-gray-900">{block.value}</p>
+          </Card>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

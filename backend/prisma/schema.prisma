@@ -49,7 +49,7 @@ model Saving {
   id            String    @id @default(uuid())
   memberId      String
   member        Member    @relation(fields: [memberId], references: [id])
-  amount        Decimal   @db.Decimal(15, 2)
+  amount        Decimal
   dateRecorded  DateTime
   recordedById  String
   recordedBy    Member    @relation("Recorder", fields: [recordedById], references: [id])
@@ -61,15 +61,15 @@ model Loan {
   id                  String      @id @default(uuid())
   memberId            String
   member              Member      @relation(fields: [memberId], references: [id])
-  principal           Decimal     @db.Decimal(15, 2)
-  interestRatePct     Decimal     @db.Decimal(5, 2)
+  principal           Decimal
+  interestRatePct     Decimal
   termMonths          Int
   installmentsCount   Int
   disbursedAt         DateTime?
   status              LoanStatus  @default(PENDING)
-  totalInterest       Decimal     @db.Decimal(15, 2)
-  totalPayable        Decimal     @db.Decimal(15, 2)
-  installmentAmount   Decimal     @db.Decimal(15, 2)
+  totalInterest       Decimal
+  totalPayable        Decimal
+  installmentAmount   Decimal
   maxMultiplier       Int
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
@@ -82,11 +82,11 @@ model Repayment {
   loanId           String
   loan             Loan      @relation(fields: [loanId], references: [id])
   memberId         String
-  amount           Decimal   @db.Decimal(15, 2)
+  amount           Decimal
   paymentDate      DateTime
   recordedById     String
   recordedBy       Member    @relation("RepaymentRecorder", fields: [recordedById], references: [id])
-  remainingBalance Decimal   @db.Decimal(15, 2)
+  remainingBalance Decimal
   createdAt        DateTime  @default(now())
 }
 
@@ -96,7 +96,7 @@ model AuditLog {
   referenceId  String?
   userId       String
   user         Member    @relation(fields: [userId], references: [id])
-  amount       Decimal?  @db.Decimal(15, 2)
+  amount       Decimal?
   note         String?   @db.Text
   createdAt    DateTime  @default(now())
 }
@@ -105,6 +105,6 @@ model Setting {
   id                  Int      @id @default(1)
   loanMultiplier      Int      @default(3)
   minMonthsSaved      Int      @default(3)
-  lateFeePct          Decimal  @default(5.00) @db.Decimal(5, 2)
+  lateFeePct          Decimal  @default(5.00)
   interestPolicy      String   @default("SIMPLE")
 }

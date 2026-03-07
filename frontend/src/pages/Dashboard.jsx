@@ -41,79 +41,37 @@ export default function Dashboard() {
       setLoading(true);
       setError(null);
       try {
-        const [summary, savingsGrowth, loansIssued, interestDist] = await Promise.allSettled([
+        // Fetch all data in parallel
+        const [summaryRes, savingsGrowthRes, loansIssuedRes, interestDistRes] = await Promise.allSettled([
           reportsApi.getSummary(),
           reportsApi.getSavingsGrowth(),
           reportsApi.getLoansIssued(),
           reportsApi.getInterestDistribution(),
         ]);
-        if (summary.status === 'fulfilled' && summary.value) {
-          const s = summary.value;
+
+        // Process summary stats
+        if (summaryRes.status === 'fulfilled' && summaryRes.value) {
+          const s = summaryRes.value;
           setStats({
             totalMembers: s.totalMembers ?? s.members ?? 0,
-            totalSavings: s.totalSavings ?? s.groupSavings ?? 0,
-            activeLoans: s.activeLoans ?? s.loans ?? 0,
-            interestEarned: s.interestEarned ?? s.interest ?? 0,
+            totalSavings: s.totalSavings ?? s.totalGroupSavings ?? 0,
+            activeLoans: s.activeLoans ?? s.activeLoansCount ?? 0,
+            interestEarned: s.interestEarned ?? s.totalInterestEarned ?? 0,
           });
         }
-        if (savingsGrowth.status === 'fulfilled' && Array.isArray(savingsGrowth.value)) {
-          setSavingsData(savingsGrowth.value);
-        } else {
-          setSavingsData([
-            { month: 'Jan', amount: 120000 },
-            { month: 'Feb', amount: 180000 },
-            { month: 'Mar', amount: 220000 },
-            { month: 'Apr', amount: 250000 },
-            { month: 'May', amount: 310000 },
-            { month: 'Jun', amount: 380000 },
-          ]);
-        }
-        if (loansIssued.status === 'fulfilled' && Array.isArray(loansIssued.value)) {
-          setLoansData(loansIssued.value);
-        } else {
-          setLoansData([
-            { month: 'Jan', amount: 50000 },
-            { month: 'Feb', amount: 80000 },
-            { month: 'Mar', amount: 60000 },
-            { month: 'Apr', amount: 90000 },
-            { month: 'May', amount: 70000 },
-            { month: 'Jun', amount: 110000 },
-          ]);
-        }
-        if (interestDist.status === 'fulfilled' && Array.isArray(interestDist.value)) {
-          setInterestData(interestDist.value);
-        } else {
-          setInterestData(
-            [
-              { name: 'Loan interest', value: 45000 },
-              { name: 'Penalties', value: 5000 },
-              { name: 'Other', value: 2000 },
-            ].map((d) => ({ ...d, name: d.name, value: d.value }))
-          );
-        }
+
+        // Process chart data, setting empty array if fetch failed
+        setSavingsData(savingsGrowthRes.status === 'fulfilled' && Array.isArray(savingsGrowthRes.value) ? savingsGrowthRes.value : []);
+        setLoansData(loansIssuedRes.status === 'fulfilled' && Array.isArray(loansIssuedRes.value) ? loansIssuedRes.value : []);
+        setInterestData(interestDistRes.status === 'fulfilled' && Array.isArray(interestDistRes.value) ? interestDistRes.value : []);
+
       } catch (e) {
         setError(e.message || 'Failed to load dashboard data.');
-        setSavingsData([
-          { month: 'Jan', amount: 120000 },
-          { month: 'Feb', amount: 180000 },
-          { month: 'Mar', amount: 220000 },
-          { month: 'Apr', amount: 250000 },
-          { month: 'May', amount: 310000 },
-          { month: 'Jun', amount: 380000 },
-        ]);
-        setLoansData([
-          { month: 'Jan', amount: 50000 },
-          { month: 'Feb', amount: 80000 },
-          { month: 'Mar', amount: 60000 },
-          { month: 'Apr', amount: 90000 },
-          { month: 'May', amount: 70000 },
-          { month: 'Jun', amount: 110000 },
-        ]);
-        setInterestData([
-          { name: 'Loan interest', value: 45 },
-          { name: 'Penalties', value: 5 },
-          { name: 'Other', value: 2 },
-        ]);
+        // Clear all data on critical error
+        setStats({ totalMembers: 0, totalSavings: 0, activeLoans: 0, interestEarned: 0 });
+        setSavingsData([]);
+        setLoansData([]);
+        setInterestData([]);
       } finally {
         setLoading(false);
       }
@@ -145,8 +103,8 @@ export default function Dashboard() {
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
       {error && (
-        <Alert type="info" onDismiss={() => setError(null)} dismissible>
-          Using sample data. Connect backend for live stats. {error}
+        <Alert type="error" onDismiss={() => setError(null)} dismissible>
+          Could not load dashboard data: {error}
         </Alert>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

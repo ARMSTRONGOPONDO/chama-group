@@ -34,13 +34,10 @@ export default function Members() {
     setError(null);
     try {
       const data = await membersApi.getAll();
-      setMembers(Array.isArray(data) ? data : data?.members ?? []);
+      setMembers(Array.isArray(data) ? data : []);
     } catch (e) {
       setError(e.message || 'Failed to load members.');
-      setMembers([
-        { id: 1, memberName: 'Jane Wanjiku', phoneNumber: '+254712345678', nationalId: '12345678', dateJoined: '2024-01-15', memberNumber: 'CHM-001' },
-        { id: 2, memberName: 'John Kamau', phoneNumber: '+254723456789', nationalId: '23456789', dateJoined: '2024-02-20', memberNumber: 'CHM-002' },
-      ]);
+      setMembers([]); // Set to empty array on error
     } finally {
       setLoading(false);
     }
@@ -120,57 +117,91 @@ export default function Members() {
             <option value="inactive">Inactive</option>
           </FormSelect>
         </div>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <Th>Member No</Th>
-              <Th>Name</Th>
-              <Th>Phone</Th>
-              <Th>National ID</Th>
-              <Th>Date Joined</Th>
-              <Th className="text-right">Actions</Th>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              [1, 2, 3].map((i) => (
-                <TableRow key={i}>
-                  <Td colSpan={6} className="text-center py-8 text-gray-500">Loading...</Td>
-                </TableRow>
-              ))
-            ) : (
-              filtered.map((m) => (
-                <TableRow key={m.id}>
-                  <Td className="font-mono text-xs">{m.memberNumber || '—'}</Td>
-                  <Td className="font-medium">{m.memberName || m.name}</Td>
-                  <Td>{m.phoneNumber || m.phone}</Td>
-                  <Td>{m.nationalId || '—'}</Td>
-                  <Td>{formatDate(m.dateJoined)}</Td>
-                  <Td className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setViewProfile(m)}
-                        className="p-2 rounded-lg text-gray-500 hover:bg-[#F8F7FF] hover:text-[#7C3AED] transition-smooth"
-                        title="View profile"
-                      >
-                        <FiEye size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openEdit(m)}
-                        className="p-2 rounded-lg text-gray-500 hover:bg-[#F8F7FF] hover:text-[#7C3AED] transition-smooth"
-                        title="Edit"
-                      >
-                        <FiEdit2 size={16} />
-                      </button>
-                    </div>
-                  </Td>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        {loading ? (
+          <div className="p-6 text-center text-gray-500">Loading members...</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">No members match your search.</div>
+        ) : (
+          <>
+            <div className="sm:hidden space-y-3 p-4">
+              {filtered.map((m) => (
+                <div key={m.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>Member</span>
+                    <span className="font-mono">{m.memberNumber || '—'}</span>
+                  </div>
+                  <div className="mt-2 text-base font-semibold text-gray-900">{m.memberName || m.name}</div>
+                  <div className="mt-1 text-sm text-gray-600">{m.phoneNumber || m.phone}</div>
+                  <div className="mt-1 flex items-center justify-between text-xs text-gray-500">
+                    <span>ID</span>
+                    <span>{m.nationalId || '—'}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setViewProfile(m)}
+                      className="flex-1 px-3 py-2 rounded-lg border border-[#7C3AED] text-[#7C3AED] text-sm font-semibold"
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openEdit(m)}
+                      className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm font-semibold"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <Th>Member No</Th>
+                    <Th>Name</Th>
+                    <Th>Phone</Th>
+                    <Th>National ID</Th>
+                    <Th>Date Joined</Th>
+                    <Th className="text-right">Actions</Th>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filtered.map((m) => (
+                    <TableRow key={m.id}>
+                      <Td className="font-mono text-xs">{m.memberNumber || '—'}</Td>
+                      <Td className="font-medium">{m.memberName || m.name}</Td>
+                      <Td>{m.phoneNumber || m.phone}</Td>
+                      <Td>{m.nationalId || '—'}</Td>
+                      <Td>{formatDate(m.dateJoined)}</Td>
+                      <Td className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setViewProfile(m)}
+                            className="p-2 rounded-lg text-gray-500 hover:bg-[#F8F7FF] hover:text-[#7C3AED] transition-smooth"
+                            title="View profile"
+                          >
+                            <FiEye size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEdit(m)}
+                            className="p-2 rounded-lg text-gray-500 hover:bg-[#F8F7FF] hover:text-[#7C3AED] transition-smooth"
+                            title="Edit"
+                          >
+                            <FiEdit2 size={16} />
+                          </button>
+                        </div>
+                      </Td>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </Card>
 
       <Modal

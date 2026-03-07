@@ -17,7 +17,8 @@ export default function Savings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ memberId: '', amount: '', dateRecorded: new Date().toISOString().slice(0, 10), transactionId: '' });
+  const today = new Date().toISOString().slice(0, 10);
+  const [formData, setFormData] = useState({ memberId: '', amount: '', dateRecorded: today, transactionId: '' });
   const [submitLoading, setSubmitLoading] = useState(false);
   const [success, setSuccess] = useState('');
 
@@ -76,7 +77,7 @@ export default function Savings() {
       });
       setSuccess('Savings recorded successfully.');
       setModalOpen(false);
-      setFormData({ memberId: '', amount: '', dateRecorded: new Date().toISOString().slice(0, 10), transactionId: '' });
+      setFormData({ memberId: '', amount: '', dateRecorded: today, transactionId: '' });
       loadData();
     } catch (e) {
       setError(e.message || 'Failed to record savings.');
@@ -129,36 +130,54 @@ export default function Savings() {
         <div className="p-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-900">Savings History</h2>
         </div>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <Th>Date</Th>
-              <Th>Member</Th>
-              <Th>Amount</Th>
-              <Th>Ref</Th>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <Td colSpan={4} className="text-center py-8 text-gray-500">Loading...</Td>
-              </TableRow>
-            ) : savings.length === 0 ? (
-              <TableRow>
-                <Td colSpan={4} className="text-center py-8 text-gray-500">No savings recorded yet.</Td>
-              </TableRow>
-            ) : (
-              savings.map((s) => (
-                <TableRow key={s.id}>
-                  <Td>{formatDate(s.dateRecorded)}</Td>
-                  <Td>{s.memberName ?? s.member?.name ?? s.memberId}</Td>
-                  <Td className="font-semibold">{formatCurrency(s.amount)}</Td>
-                  <Td className="font-mono text-xs">{s.transactionId || '—'}</Td>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        {loading ? (
+          <div className="p-6 text-center text-gray-500">Loading...</div>
+        ) : savings.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">No savings recorded yet.</div>
+        ) : (
+          <>
+            <div className="sm:hidden space-y-3 p-4">
+              {savings.map((s) => (
+                <div key={s.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span>Date</span>
+                    <span>{formatDate(s.dateRecorded)}</span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-base font-semibold text-gray-900">
+                    <span>{s.memberName ?? s.member?.name ?? s.memberId}</span>
+                    <span>{formatCurrency(s.amount)}</span>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500 flex items-center justify-between">
+                    <span>Ref</span>
+                    <span className="font-mono">{s.transactionId || '—'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <Th>Date</Th>
+                    <Th>Member</Th>
+                    <Th>Amount</Th>
+                    <Th>Ref</Th>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {savings.map((s) => (
+                    <TableRow key={s.id}>
+                      <Td>{formatDate(s.dateRecorded)}</Td>
+                      <Td>{s.memberName ?? s.member?.name ?? s.memberId}</Td>
+                      <Td className="font-semibold">{formatCurrency(s.amount)}</Td>
+                      <Td className="font-mono text-xs">{s.transactionId || '—'}</Td>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </Card>
 
       <Modal
@@ -192,13 +211,14 @@ export default function Savings() {
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
             required
           />
-          <FormInput
-            label="Date"
-            type="date"
-            value={formData.dateRecorded}
-            onChange={(e) => setFormData({ ...formData, dateRecorded: e.target.value })}
-            required
-          />
+           <FormInput
+             label="Date"
+             type="date"
+             value={formData.dateRecorded}
+             onChange={(e) => setFormData({ ...formData, dateRecorded: e.target.value })}
+             required
+             min={today}
+           />
           <FormInput
             label="Transaction Ref (optional)"
             value={formData.transactionId}

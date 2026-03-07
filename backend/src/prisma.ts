@@ -5,10 +5,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const connectionString = `${process.env.DATABASE_URL}`;
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL must be set to connect to PostgreSQL.');
+}
+
 const pool = new pg.Pool({ connectionString });
 const adapter = new PrismaPg(pool);
-
 const prisma = new PrismaClient({ adapter });
 
 export default prisma;

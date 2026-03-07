@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
-import { Prisma } from '@prisma/client';
 
-const Decimal = Prisma.Decimal;
+import { Decimal } from 'decimal.js';
 
 export const applyForLoan = async (req: AuthRequest, res: Response) => {
     try {
@@ -64,6 +63,16 @@ export const applyForLoan = async (req: AuthRequest, res: Response) => {
             },
         });
 
+        await prisma.auditLog.create({
+            data: {
+                type: 'LOAN_APPLICATION',
+                referenceId: loan.id,
+                userId: memberId,
+                amount: new Decimal(principal),
+                note: `Member ${memberId} applied for a loan of KSh ${principal}`,
+            },
+        });
+
         res.status(201).json({ message: 'Loan application submitted', loan });
     } catch (error) {
         console.error('Loan application error:', error);
@@ -74,12 +83,25 @@ export const applyForLoan = async (req: AuthRequest, res: Response) => {
 export const approveLoan = async (req: AuthRequest, res: Response) => {
     try {
         const id = req.params.id as string;
+        const approverId = req.user?.id;
+
+        if (!approverId) return res.status(401).json({ message: 'Unauthorized' });
 
         const loan = await prisma.loan.update({
             where: { id },
             data: {
                 status: 'ACTIVE',
                 disbursedAt: new Date(),
+            },
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                type: 'LOAN_APPROVAL',
+                referenceId: loan.id,
+                userId: approverId,
+                amount: loan.principal,
+                note: `Loan of KSh ${loan.principal} for member ${loan.memberId} approved by user ${approverId}`,
             },
         });
 

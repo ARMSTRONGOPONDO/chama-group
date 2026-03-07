@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { recordSaving, getMemberSavings, getSavingsSummary } from '../controllers/savingController.js';
+import { recordSaving, getMemberSavings, getSavingsSummary, getAllSavings } from '../controllers/savingController.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
 
 const router = Router();
@@ -7,5 +7,6 @@ const router = Router();
 router.post('/', authenticate, authorize(['TREASURER', 'ADMIN']), recordSaving);
 router.get('/member/:id', authenticate, getMemberSavings);
 router.get('/summary', authenticate, authorize(['ADMIN', 'TREASURER']), getSavingsSummary);
+router.get('/', authenticate, authorize(['ADMIN', 'TREASURER']), getAllSavings);
 
 export default router;

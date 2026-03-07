@@ -5,9 +5,20 @@ const getAuthHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const handleResponse = (res) => res.data;
-const handleError = (err) => {
-  const status = err?.status ?? err?.response?.status;
+const extractErrorMessage = async (response) => {
+  try {
+    const payload = await response.json();
+    if (payload?.message) return payload.message;
+    if (payload?.error) return payload.error;
+    return JSON.stringify(payload);
+  } catch (err) {
+    const text = await response.text().catch(() => '');
+    return text || response.statusText || 'Request failed';
+  }
+};
+
+const handleError = (error) => {
+  const status = error?.status;
   if (status === 401) {
     localStorage.removeItem('chama_token');
     localStorage.removeItem('chama_user');
@@ -15,35 +26,52 @@ const handleError = (err) => {
       window.location.href = '/login';
     }
   }
-  throw err;
+  throw error;
 };
+
+const handleApiResponse = async (response) => {
+  if (response.ok) {
+    if (response.status === 204) return null;
+    return response.json();
+  }
+  const message = await extractErrorMessage(response);
+  const error = new Error(message);
+  error.status = response.status;
+  throw error;
+};
+
+const mergeHeaders = (custom = {}, contentType = true) => ({
+  ...(contentType ? { 'Content-Type': 'application/json' } : {}),
+  ...getAuthHeaders(),
+  ...custom,
+});
 
 export const api = {
   get: (url, config = {}) =>
-    fetch(`${API_BASE}${url}`, { ...config, headers: { ...getAuthHeaders(), ...config.headers } })
-      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+    fetch(`${API_BASE}${url}`, { ...config, headers: mergeHeaders(config.headers, false) })
+      .then(handleApiResponse)
       .catch(handleError),
   post: (url, data, config = {}) =>
     fetch(`${API_BASE}${url}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...config.headers },
+      headers: mergeHeaders(config.headers),
       body: JSON.stringify(data),
       ...config,
     })
-      .then((r) => (r.ok ? (r.status === 204 ? null : r.json()) : Promise.reject(r)))
+      .then(handleApiResponse)
       .catch(handleError),
   put: (url, data, config = {}) =>
     fetch(`${API_BASE}${url}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...config.headers },
+      headers: mergeHeaders(config.headers),
       body: JSON.stringify(data),
       ...config,
     })
-      .then((r) => (r.ok ? (r.status === 204 ? null : r.json()) : Promise.reject(r)))
+      .then(handleApiResponse)
       .catch(handleError),
   delete: (url, config = {}) =>
-    fetch(`${API_BASE}${url}`, { method: 'DELETE', headers: getAuthHeaders(), ...config })
-      .then((r) => (r.ok ? (r.status === 204 ? null : r.json().catch(() => ({}))) : Promise.reject(r)))
+    fetch(`${API_BASE}${url}`, { method: 'DELETE', headers: mergeHeaders(config.headers, false), ...config })
+      .then(handleApiResponse)
       .catch(handleError),
 };
 
@@ -71,7 +99,7 @@ export const savingsApi = {
 export const loansApi = {
   getAll: () => api.get('/loans'),
   getOne: (id) => api.get(`/loans/${id}`),
-  create: (data) => api.post('/loans', data),
+  create: (data) => api.post('/loans/apply', data),
   getRepayments: (loanId) => api.get(`/loans/${loanId}/repayments`),
 };
 
@@ -81,7 +109,7 @@ export const repaymentsApi = {
 };
 
 export const reportsApi = {
-  getSummary: () => api.get('/reports/summary'),
+  getSummary: () => api.get('/reports/overview'),
   getSavingsGrowth: () => api.get('/reports/savings-growth'),
   getLoansIssued: () => api.get('/reports/loans-issued'),
   getInterestDistribution: () => api.get('/reports/interest-distribution'),
