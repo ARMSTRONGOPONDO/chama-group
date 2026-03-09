@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   preview: {
-    allowedHosts: 'all',
+    allowedHosts: ['chama-frontend-production-0fa3.up.railway.app', '*.up.railway.app', '*.railway.app', 'localhost'],
   },
   server: {
     proxy: {
